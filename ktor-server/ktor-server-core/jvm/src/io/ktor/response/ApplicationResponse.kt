@@ -47,6 +47,3 @@ public interface ApplicationResponse {
      */
     public fun push(builder: ResponsePushBuilder)
 }
-
-
-

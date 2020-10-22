@@ -12,11 +12,29 @@ import io.ktor.http.content.*
 import io.ktor.util.*
 import io.ktor.utils.io.*
 import java.io.*
+import kotlin.reflect.*
 
 /**
  * Sends a [message] as a response
  */
-@Suppress("NOTHING_TO_INLINE")
+@OptIn(ExperimentalStdlibApi::class)
+@JvmName("respondWithType")
+public suspend inline fun <reified T> ApplicationCall.respond(message: T) {
+    try {
+        // We need to wrap getting type in try catch because of https://youtrack.jetbrains.com/issue/KT-42913
+        attributes.put(ResponseTypeAttributeKey, typeOf<T>())
+    } catch (_: Throwable) {
+    }
+    response.pipeline.execute(this, message as Any)
+}
+
+/**
+ * Sends a [message] as a response
+ */
+@Deprecated(
+    message = "This method doesn't save type of the response. This can lead to error in serialization",
+    level = DeprecationLevel.HIDDEN
+)
 public suspend inline fun ApplicationCall.respond(message: Any) {
     response.pipeline.execute(this, message)
 }
@@ -24,10 +42,23 @@ public suspend inline fun ApplicationCall.respond(message: Any) {
 /**
  * Sets [status] and sends a [message] as a response
  */
-@Suppress("NOTHING_TO_INLINE")
+@OptIn(ExperimentalStdlibApi::class)
+@JvmName("respondWithType")
+public suspend inline fun <reified T> ApplicationCall.respond(status: HttpStatusCode, message: T) {
+    response.status(status)
+    respond(message)
+}
+
+/**
+ * Sets [status] and sends a [message] as a response
+ */
+@Deprecated(
+    message = "This method doesn't save type of the response. This can lead to error in serialization",
+    level = DeprecationLevel.HIDDEN
+)
 public suspend inline fun ApplicationCall.respond(status: HttpStatusCode, message: Any) {
     response.status(status)
-    response.pipeline.execute(this, message)
+    respond(message)
 }
 
 /**
@@ -51,7 +82,12 @@ public suspend inline fun ApplicationCall.respondRedirect(permanent: Boolean = f
  * @param contentType is an optional [ContentType], default is [ContentType.Text.Plain]
  * @param status is an optional [HttpStatusCode], default is [HttpStatusCode.OK]
  */
-public suspend fun ApplicationCall.respondText(text: String, contentType: ContentType? = null, status: HttpStatusCode? = null, configure: OutgoingContent.() -> Unit = {}) {
+public suspend fun ApplicationCall.respondText(
+    text: String,
+    contentType: ContentType? = null,
+    status: HttpStatusCode? = null,
+    configure: OutgoingContent.() -> Unit = {}
+) {
     val message = TextContent(text, defaultTextContentType(contentType), status).apply(configure)
     respond(message)
 }
@@ -61,7 +97,11 @@ public suspend fun ApplicationCall.respondText(text: String, contentType: Conten
  * @param contentType is an optional [ContentType], default is [ContentType.Text.Plain]
  * @param status is an optional [HttpStatusCode], default is [HttpStatusCode.OK]
  */
-public suspend fun ApplicationCall.respondText(contentType: ContentType? = null, status: HttpStatusCode? = null, provider: suspend () -> String) {
+public suspend fun ApplicationCall.respondText(
+    contentType: ContentType? = null,
+    status: HttpStatusCode? = null,
+    provider: suspend () -> String
+) {
     val message = TextContent(provider(), defaultTextContentType(contentType), status)
     respond(message)
 }
@@ -71,7 +111,11 @@ public suspend fun ApplicationCall.respondText(contentType: ContentType? = null,
  * @param contentType is an optional [ContentType], unspecified by default
  * @param status is an optional [HttpStatusCode], default is [HttpStatusCode.OK]
  */
-public suspend fun ApplicationCall.respondBytes(contentType: ContentType? = null, status: HttpStatusCode? = null, provider: suspend () -> ByteArray) {
+public suspend fun ApplicationCall.respondBytes(
+    contentType: ContentType? = null,
+    status: HttpStatusCode? = null,
+    provider: suspend () -> ByteArray
+) {
     respond(ByteArrayContent(provider(), contentType, status))
 }
 
@@ -80,14 +124,23 @@ public suspend fun ApplicationCall.respondBytes(contentType: ContentType? = null
  * @param contentType is an optional [ContentType], unspecified by default
  * @param status is an optional [HttpStatusCode], default is [HttpStatusCode.OK]
  */
-public suspend fun ApplicationCall.respondBytes(bytes: ByteArray, contentType: ContentType? = null, status: HttpStatusCode? = null, configure: OutgoingContent.() -> Unit = {}) {
+public suspend fun ApplicationCall.respondBytes(
+    bytes: ByteArray,
+    contentType: ContentType? = null,
+    status: HttpStatusCode? = null,
+    configure: OutgoingContent.() -> Unit = {}
+) {
     respond(ByteArrayContent(bytes, contentType, status).apply(configure))
 }
 
 /**
  * Responds to a client with a contents of a file with the name [fileName] in the [baseDir] folder
  */
-public suspend fun ApplicationCall.respondFile(baseDir: File, fileName: String, configure: OutgoingContent.() -> Unit = {}) {
+public suspend fun ApplicationCall.respondFile(
+    baseDir: File,
+    fileName: String,
+    configure: OutgoingContent.() -> Unit = {}
+) {
     val message = LocalFileContent(baseDir, fileName).apply(configure)
     respond(message)
 }
@@ -106,7 +159,11 @@ public suspend fun ApplicationCall.respondFile(file: File, configure: OutgoingCo
  * The [writer] parameter will be called later when engine is ready to produce content.
  * Provided [Writer] will be closed automatically.
  */
-public suspend fun ApplicationCall.respondTextWriter(contentType: ContentType? = null, status: HttpStatusCode? = null, writer: suspend Writer.() -> Unit) {
+public suspend fun ApplicationCall.respondTextWriter(
+    contentType: ContentType? = null,
+    status: HttpStatusCode? = null,
+    writer: suspend Writer.() -> Unit
+) {
     val message = WriterContent(writer, defaultTextContentType(contentType), status)
     respond(message)
 }
@@ -117,7 +174,11 @@ public suspend fun ApplicationCall.respondTextWriter(contentType: ContentType? =
  * The [producer] parameter will be called later when engine is ready to produce content. You don't need to close it.
  * Provided [OutputStream] will be closed automatically.
  */
-public suspend fun ApplicationCall.respondOutputStream(contentType: ContentType? = null, status: HttpStatusCode? = null, producer: suspend OutputStream.() -> Unit) {
+public suspend fun ApplicationCall.respondOutputStream(
+    contentType: ContentType? = null,
+    status: HttpStatusCode? = null,
+    producer: suspend OutputStream.() -> Unit
+) {
     val message = OutputStreamContent(producer, contentType ?: ContentType.Application.OctetStream, status)
     respond(message)
 }
