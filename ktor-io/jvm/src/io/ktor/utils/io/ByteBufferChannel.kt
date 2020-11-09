@@ -425,30 +425,6 @@ internal open class ByteBufferChannel(
         }
     }
 
-    private inline fun readingIfNotYet(block: ByteBuffer.(RingBufferCapacity) -> Boolean): Boolean {
-        val state = state
-        var releaseReadState = false
-        // TODO this is not exactly correct but...
-        val buffer = if (state is ReadWriteBufferState.Reading || state is ReadWriteBufferState.ReadingWriting) {
-            state.readBuffer.apply {
-                @Suppress("DEPRECATION_ERROR")
-                prepareBuffer(readByteOrder, readPosition, state.capacity.availableForRead)
-            }
-        } else {
-            releaseReadState = true
-            setupStateForRead() ?: return false
-        }
-
-        return try {
-            block(buffer, this.state.capacity)
-        } finally {
-            if (releaseReadState) {
-                restoreStateAfterRead()
-                tryTerminate()
-            }
-        }
-    }
-
     private inline fun reading(block: ByteBuffer.(RingBufferCapacity) -> Boolean): Boolean {
         val buffer = setupStateForRead() ?: return false
         val capacity = state.capacity
@@ -2198,22 +2174,26 @@ internal open class ByteBufferChannel(
     }
 
     override suspend fun readRemaining(limit: Long, headerSizeHint: Int): ByteReadPacket {
-        if (isClosedForWrite) {
-            return buildPacket(headerSizeHint) {
-                var remaining = limit
-                writeWhile { buffer ->
-                    if (buffer.writeRemaining.toLong() > remaining) {
-                        buffer.resetForWrite(remaining.toInt())
-                    }
-
-                    val rc = readAsMuchAsPossible(buffer)
-                    remaining -= rc
-                    remaining > 0L && !isClosedForRead
-                }
-            }
+        val result = if (isClosedForWrite) {
+            remainingPacket(limit, headerSizeHint)
+        } else {
+            readRemainingSuspend(limit, headerSizeHint)
         }
 
-        return readRemainingSuspend(limit, headerSizeHint)
+        return result
+    }
+
+    private fun remainingPacket(limit: Long, headerSizeHint: Int): ByteReadPacket = buildPacket(headerSizeHint) {
+        var remaining = limit
+        writeWhile { buffer ->
+            if (buffer.writeRemaining.toLong() > remaining) {
+                buffer.resetForWrite(remaining.toInt())
+            }
+
+            val rc = readAsMuchAsPossible(buffer)
+            remaining -= rc
+            remaining > 0L && !isClosedForRead
+        }
     }
 
     private suspend fun readRemainingSuspend(
@@ -2227,7 +2207,8 @@ internal open class ByteBufferChannel(
 
             val rc = readAsMuchAsPossible(buffer)
             remaining -= rc
-            remaining > 0L && readSuspend(1)
+            readSuspend(1)
+            remaining > 0L && !isClosedForRead
         }
     }
 
@@ -2281,13 +2262,16 @@ internal open class ByteBufferChannel(
         closed?.let { closedValue ->
             closedValue.cause?.let { rethrowClosed(it) }
             val afterCapacity = state.capacity
-            val result = afterCapacity.flush() && afterCapacity.availableForRead >= size
-
+            val flush = afterCapacity.flush()
+            val result = flush && afterCapacity.availableForRead >= size
             if (readOp != null) throw IllegalStateException("Read operation is already in progress")
             return result
         }
 
-        if (size == 1) return readSuspendImpl(1)
+        if (size == 1) {
+            return readSuspendImpl(1)
+        }
+
         return readSuspendLoop(size)
     }
 
@@ -2322,33 +2306,38 @@ internal open class ByteBufferChannel(
         return true
     }
 
-    private fun suspensionForSize(size: Int, c: Continuation<Boolean>): Any {
+    private fun suspensionForSize(size: Int, continuation: Continuation<Boolean>): Any {
         do {
             if (!readSuspendPredicate(size)) {
-                c.resume(true)
+                continuation.resume(true)
                 break
             }
 
             closed?.let {
                 if (it.cause != null) {
-                    c.resumeWithException(it.cause)
+                    continuation.resumeWithException(it.cause)
                 } else {
-                    c.resume(state.capacity.flush() && state.capacity.availableForRead >= size)
+                    val flush = state.capacity.flush()
+                    val hasEnoughBytes = state.capacity.availableForRead >= size
+                    continuation.resume(flush && hasEnoughBytes)
                 }
+
                 return COROUTINE_SUSPENDED
             }
-        } while (!setContinuation({ readOp }, ReadOp, c, { closed == null && readSuspendPredicate(size) }))
+        } while (!setContinuation({ readOp }, ReadOp, continuation, { closed == null && readSuspendPredicate(size) }))
 
         return COROUTINE_SUSPENDED
     }
 
     private suspend fun readSuspendImpl(size: Int): Boolean {
-        if (!readSuspendPredicate(size)) return true
+        if (!readSuspendPredicate(size)) {
+            return true
+        }
 
         return suspendCoroutineUninterceptedOrReturn { ucont ->
-            val c = readSuspendContinuationCache
-            suspensionForSize(size, c)
-            c.completeSuspendBlock(ucont.intercepted())
+            val cache = readSuspendContinuationCache
+            suspensionForSize(size, cache)
+            cache.completeSuspendBlock(ucont.intercepted())
         }
     }
 
