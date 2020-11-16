@@ -425,30 +425,6 @@ internal open class ByteBufferChannel(
         }
     }
 
-    private inline fun readingIfNotYet(block: ByteBuffer.(RingBufferCapacity) -> Boolean): Boolean {
-        val state = state
-        var releaseReadState = false
-        // TODO this is not exactly correct but...
-        val buffer = if (state is ReadWriteBufferState.Reading || state is ReadWriteBufferState.ReadingWriting) {
-            state.readBuffer.apply {
-                @Suppress("DEPRECATION_ERROR")
-                prepareBuffer(readByteOrder, readPosition, state.capacity.availableForRead)
-            }
-        } else {
-            releaseReadState = true
-            setupStateForRead() ?: return false
-        }
-
-        return try {
-            block(buffer, this.state.capacity)
-        } finally {
-            if (releaseReadState) {
-                restoreStateAfterRead()
-                tryTerminate()
-            }
-        }
-    }
-
     private inline fun reading(block: ByteBuffer.(RingBufferCapacity) -> Boolean): Boolean {
         val buffer = setupStateForRead() ?: return false
         val capacity = state.capacity
@@ -970,6 +946,7 @@ internal open class ByteBufferChannel(
             return writeByteSuspend(buffer, b, c)
         }
 
+        prepareWriteBuffer(buffer, 1)
         doWrite(buffer, b, c)
     }
 
@@ -994,8 +971,6 @@ internal open class ByteBufferChannel(
             return delegateByte(b)
         }
 
-        @Suppress("DEPRECATION_ERROR")
-        buffer.prepareBuffer(writeByteOrder, writePosition, c.availableForWrite)
         return tryWriteByte(buffer, b, c)
     }
 
@@ -1036,6 +1011,7 @@ internal open class ByteBufferChannel(
             return writeShortSuspend(buffer, s, c)
         }
 
+        prepareWriteBuffer(buffer, 2)
         return doWrite(buffer, s, c)
     }
 
@@ -1053,8 +1029,6 @@ internal open class ByteBufferChannel(
             return delegateShort(s)
         }
 
-        @Suppress("DEPRECATION_ERROR")
-        buffer.prepareBuffer(writeByteOrder, writePosition, c.availableForWrite)
         return tryWriteShort(buffer, s, c)
     }
 
@@ -1066,6 +1040,16 @@ internal open class ByteBufferChannel(
 
     private fun ByteBuffer.tryWriteInt(i: Int, c: RingBufferCapacity): Boolean {
         if (c.tryWriteExact(4)) {
+            prepareWriteBuffer(this, 4)
+            doWrite(this, i, c)
+            return true
+        }
+
+        return false
+    }
+
+    private fun doWrite(buffer: ByteBuffer, i: Int, c: RingBufferCapacity) {
+        buffer.apply {
             if (remaining() < 4) {
                 limit(capacity())
                 putInt(i)
@@ -1075,13 +1059,11 @@ internal open class ByteBufferChannel(
             }
 
             bytesWritten(c, 4)
-            if (c.isFull() || autoFlush) flush()
-            restoreStateAfterWrite()
-            tryTerminate()
-            return true
         }
 
-        return false
+        if (c.isFull() || autoFlush) flush()
+        restoreStateAfterWrite()
+        tryTerminate()
     }
 
     override suspend fun writeInt(i: Int) {
@@ -1093,7 +1075,7 @@ internal open class ByteBufferChannel(
             else return delegateSuspend(joining!!, { writeInt(i) })
         }
         val c = state.capacity
-//
+
         if (buffer.tryWriteInt(i, c)) {
             return
         }
@@ -1114,8 +1096,6 @@ internal open class ByteBufferChannel(
             return delegateInt(i)
         }
 
-        @Suppress("DEPRECATION_ERROR")
-        prepareBuffer(writeByteOrder, writePosition, c.availableForWrite)
         if (!tryWriteInt(i, c)) {
             return writeIntSuspend(i, c)
         }
@@ -1129,6 +1109,16 @@ internal open class ByteBufferChannel(
 
     private fun ByteBuffer.tryWriteLong(l: Long, c: RingBufferCapacity): Boolean {
         if (c.tryWriteExact(8)) {
+            prepareWriteBuffer(this, 8)
+            doWrite(this, l, c)
+            return true
+        }
+
+        return false
+    }
+
+    private fun doWrite(buffer: ByteBuffer, l: Long, c: RingBufferCapacity) {
+        buffer.apply {
             if (remaining() < 8) {
                 limit(capacity())
                 putLong(l)
@@ -1138,13 +1128,11 @@ internal open class ByteBufferChannel(
             }
 
             bytesWritten(c, 8)
-            if (c.isFull() || autoFlush || joining != null) flush()
-            restoreStateAfterWrite()
-            tryTerminate()
-            return true
         }
 
-        return false
+        if (c.isFull() || autoFlush || joining != null) flush()
+        restoreStateAfterWrite()
+        tryTerminate()
     }
 
     override suspend fun writeLong(l: Long) {
@@ -1172,8 +1160,6 @@ internal open class ByteBufferChannel(
             return delegateLong(l)
         }
 
-        @Suppress("DEPRECATION_ERROR")
-        prepareBuffer(writeByteOrder, writePosition, c.availableForWrite)
         if (!tryWriteLong(l, c)) {
             return writeLongSuspend(l, c)
         }
@@ -1587,6 +1573,9 @@ internal open class ByteBufferChannel(
 
                 // it is important to lock bytes to fail concurrent tryLockForRelease
                 // once we have locked some bytes, tryLockForRelease will fail so it is safe to use buffer
+
+                @Suppress("DEPRECATION_ERROR")
+                dst.prepareBuffer(writeByteOrder, writePosition, locked)
 
                 val position = dst.position()
                 val l = dst.limit()
