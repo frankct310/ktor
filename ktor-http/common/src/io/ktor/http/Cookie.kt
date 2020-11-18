@@ -50,6 +50,7 @@ public enum class CookieEncoding {
      * No encoding (could be dangerous)
      */
     RAW,
+
     /**
      * Double quotes with slash-escaping
      */
@@ -157,27 +158,30 @@ public fun renderCookieHeader(cookie: Cookie): String = with(cookie) {
  */
 @KtorExperimentalAPI
 public fun renderSetCookieHeader(
-    name: String, value: String,
+    name: String,
+    value: String,
     encoding: CookieEncoding = CookieEncoding.URI_ENCODING,
-    maxAge: Int = 0, expires: GMTDate? = null, domain: String? = null,
+    maxAge: Int = 0,
+    expires: GMTDate? = null,
+    domain: String? = null,
     path: String? = null,
-    secure: Boolean = false, httpOnly: Boolean = false,
+    secure: Boolean = false,
+    httpOnly: Boolean = false,
     extensions: Map<String, String?> = emptyMap(),
     includeEncoding: Boolean = true
 ): String = (
-        listOf(
-            cookiePart(name.assertCookieName(), value, encoding),
-            cookiePartUnencoded("Max-Age", if (maxAge > 0) maxAge else null),
-            cookiePartUnencoded("Expires", expires?.toHttpDate()),
-            cookiePart("Domain", domain, CookieEncoding.RAW),
-            cookiePart("Path", path, CookieEncoding.RAW),
+    listOf(
+        cookiePart(name.assertCookieName(), value, encoding),
+        cookiePartUnencoded("Max-Age", if (maxAge > 0) maxAge else null),
+        cookiePartUnencoded("Expires", expires?.toHttpDate()),
+        cookiePart("Domain", domain, CookieEncoding.RAW),
+        cookiePart("Path", path, CookieEncoding.RAW),
 
-            cookiePartFlag("Secure", secure),
-            cookiePartFlag("HttpOnly", httpOnly)
-        )
-                + extensions.map { cookiePartExt(it.key.assertCookieName(), it.value, encoding) }
-                + if (includeEncoding) cookiePartExt("\$x-enc", encoding.name, CookieEncoding.RAW) else ""
-        ).filter { it.isNotEmpty() }
+        cookiePartFlag("Secure", secure),
+        cookiePartFlag("HttpOnly", httpOnly)
+    ) + extensions.map { cookiePartExt(it.key.assertCookieName(), it.value, encoding) } +
+        if (includeEncoding) cookiePartExt("\$x-enc", encoding.name, CookieEncoding.RAW) else ""
+    ).filter { it.isNotEmpty() }
     .joinToString("; ")
 
 /**
@@ -186,11 +190,18 @@ public fun renderSetCookieHeader(
 @KtorExperimentalAPI
 public fun encodeCookieValue(value: String, encoding: CookieEncoding): String = when (encoding) {
     CookieEncoding.RAW -> when {
-        value.any { it.shouldEscapeInCookies() } -> throw IllegalArgumentException("The cookie value contains characters that couldn't be encoded in RAW format. Consider URL_ENCODING mode")
+        value.any { it.shouldEscapeInCookies() } ->
+            throw IllegalArgumentException(
+                "The cookie value contains characters that couldn't be encoded in RAW format. " +
+                    " Consider URL_ENCODING mode"
+            )
         else -> value
     }
     CookieEncoding.DQUOTES -> when {
-        value.contains('"') -> throw IllegalArgumentException("The cookie value contains characters that couldn't be encoded in DQUOTES format. Consider URL_ENCODING mode")
+        value.contains('"') -> throw IllegalArgumentException(
+            "The cookie value contains characters that couldn't be encoded in DQUOTES format. " +
+                "Consider URL_ENCODING mode"
+        )
         value.any { it.shouldEscapeInCookies() } -> "\"$value\""
         else -> value
     }
@@ -229,7 +240,6 @@ private inline fun cookiePart(name: String, value: Any?, encoding: CookieEncodin
 @Suppress("NOTHING_TO_INLINE")
 private inline fun cookiePartUnencoded(name: String, value: Any?) =
     if (value != null) "$name=$value" else ""
-
 
 @Suppress("NOTHING_TO_INLINE")
 private inline fun cookiePartFlag(name: String, value: Boolean) =

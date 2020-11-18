@@ -22,8 +22,8 @@ private val HEX_ALPHABET = ('a'..'f') + ('A'..'F') + ('0'..'9')
  */
 @SharedImmutable
 private val URL_PROTOCOL_PART = listOf(
-    ':', '/', '?', '#', '[', ']', '@',  // general
-    '!', '$', '&', '\'', '(', ')', '*', ',', ';', '=',  // sub-components
+    ':', '/', '?', '#', '[', ']', '@', // general
+    '!', '$', '&', '\'', '(', ')', '*', ',', ';', '=', // sub-components
     '-', '.', '_', '~', '+' // unreserved
 ).map { it.toByte() }
 
@@ -134,7 +134,8 @@ public fun String.encodeURLParameter(
  * Decode URL query component
  */
 public fun String.decodeURLQueryComponent(
-    start: Int = 0, end: Int = length,
+    start: Int = 0,
+    end: Int = length,
     plusIsSpace: Boolean = false,
     charset: Charset = Charsets.UTF_8
 ): String = decodeScan(start, end, plusIsSpace, charset)
@@ -144,7 +145,8 @@ public fun String.decodeURLQueryComponent(
  * This function is not intended to decode urlencoded forms so it doesn't decode plus character to space.
  */
 public fun String.decodeURLPart(
-    start: Int = 0, end: Int = length,
+    start: Int = 0,
+    end: Int = length,
     charset: Charset = Charsets.UTF_8
 ): String = decodeScan(start, end, false, charset)
 

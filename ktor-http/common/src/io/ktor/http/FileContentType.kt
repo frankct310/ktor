@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 JetBrains s.r.o and contributors. Use of this source code is governed by the Apache 2.0 license.
+ * Copyright 2014-2020 JetBrains s.r.o and contributors. Use of this source code is governed by the Apache 2.0 license.
  */
 
 package io.ktor.http
@@ -17,7 +17,8 @@ public fun ContentType.Companion.defaultForFileExtension(extension: String): Con
 /**
  * Default [ContentType] for file [path]
  */
-public fun ContentType.Companion.defaultForFilePath(path: String): ContentType = ContentType.fromFilePath(path).selectDefault()
+public fun ContentType.Companion.defaultForFilePath(path: String): ContentType =
+    ContentType.fromFilePath(path).selectDefault()
 
 /**
  * Recommended content types by file [path]

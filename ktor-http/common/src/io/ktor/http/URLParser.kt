@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 JetBrains s.r.o and contributors. Use of this source code is governed by the Apache 2.0 license.
+ * Copyright 2014-2020 JetBrains s.r.o and contributors. Use of this source code is governed by the Apache 2.0 license.
  */
 
 package io.ktor.http
@@ -137,7 +137,7 @@ private fun URLBuilder.parseFile(urlString: String, startIndex: Int, endIndex: I
 }
 
 private fun URLBuilder.parseMailto(urlString: String, startIndex: Int, endIndex: Int) {
-    val delimiter = urlString.indexOf("@", startIndex);
+    val delimiter = urlString.indexOf("@", startIndex)
     if (delimiter == -1) {
         throw IllegalArgumentException("Invalid mailto url: $urlString, it should contain '@'.")
     }
@@ -213,13 +213,13 @@ private fun findScheme(urlString: String, startIndex: Int, endIndex: Int): Int {
         if (char == '/' || char == '?' || char == '#') return -1
 
         // Update incorrect scheme position is current char is illegal.
-        if (incorrectSchemePosition == -1
-            && char !in 'a'..'z'
-            && char !in 'A'..'Z'
-            && char !in '0'..'9'
-            && char != '.'
-            && char != '+'
-            && char != '-'
+        if (incorrectSchemePosition == -1 &&
+            char !in 'a'..'z' &&
+            char !in 'A'..'Z' &&
+            char !in '0'..'9' &&
+            char != '.' &&
+            char != '+' &&
+            char != '-'
         ) {
             incorrectSchemePosition = current
         }

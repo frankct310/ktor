@@ -18,6 +18,7 @@ import io.ktor.server.testing.*
 import io.ktor.util.*
 import io.ktor.utils.io.*
 import io.ktor.utils.io.core.*
+import io.ktor.utils.io.jvm.javaio.*
 import kotlinx.coroutines.*
 import java.io.*
 import kotlin.test.*
@@ -232,6 +233,20 @@ public abstract class ContentTestSuite<TEngine : ApplicationEngine, TConfigurati
                 assertEquals(0xba, bytes[2].toInt() and 0xff)
                 assertEquals(0xbe, bytes[3].toInt() and 0xff)
             }
+        }
+    }
+
+    @Test
+    fun testReceiveBlocking() {
+        createAndStartServer {
+            handle {
+                val text = call.receive<ByteReadChannel>().toInputStream().reader().readText()
+                call.respondText("$text!")
+            }
+        }
+
+        withUrl("/", { method = HttpMethod.Post; body = "Hello, my dear" }) {
+            assertEquals("Hello, my dear!", readText())
         }
     }
 

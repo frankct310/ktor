@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 JetBrains s.r.o and contributors. Use of this source code is governed by the Apache 2.0 license.
+ * Copyright 2014-2020 JetBrains s.r.o and contributors. Use of this source code is governed by the Apache 2.0 license.
  */
 
 package io.ktor.http
@@ -64,23 +64,23 @@ internal class StringLexer(val source: String) {
  * Delimiter in the rfc grammar
  */
 internal fun Char.isDelimiter(): Boolean =
-    this == '\u0009'
-        || this in ('\u0020'..'\u002f')
-        || this in ('\u003b'..'\u0040')
-        || this in ('\u005b'..'\u0060')
-        || this in ('\u007b'..'\u007e')
+    this == '\u0009' ||
+        this in ('\u0020'..'\u002f') ||
+        this in ('\u003b'..'\u0040') ||
+        this in ('\u005b'..'\u0060') ||
+        this in ('\u007b'..'\u007e')
 
 /**
  * non-delimiter in the rfc grammar
  */
 internal fun Char.isNonDelimiter(): Boolean =
-    this in ('\u0000'..'\u0008')
-        || this in ('\u000a'..'\u001f')
-        || this in ('0'..'9')
-        || this == ':'
-        || this in ('a'..'z')
-        || this in ('A'..'Z')
-        || this in ('\u007f'..'\u00ff')
+    this in ('\u0000'..'\u0008') ||
+        this in ('\u000a'..'\u001f') ||
+        this in ('0'..'9') ||
+        this == ':' ||
+        this in ('a'..'z') ||
+        this in ('A'..'Z') ||
+        this in ('\u007f'..'\u00ff')
 
 /**
  * octet in the rfc grammar
@@ -296,10 +296,10 @@ internal class CookieDateParser {
         }
 
         /**
-        3. If the year-value is greater than or equal to 70 and less than or
-        equal to 99, increment the year-value by 1900
-        4. If the year-value is greater than or equal to 0 and less than or
-        equal to 69, increment the year-value by 2000.
+         * 3. If the year-value is greater than or equal to 70 and less than or
+         * equal to 99, increment the year-value by 1900
+         * 4. If the year-value is greater than or equal to 0 and less than or
+         * equal to 69, increment the year-value by 2000.
          */
         when (builder.year) {
             in 70..99 -> builder.year = builder.year!! + 1900
@@ -339,5 +339,6 @@ internal class CookieDateBuilder {
  * Thrown when the date string doesn't satisfy the RFC6265 grammar
  */
 internal class InvalidCookieDateException(
-    data: String, reason: String
+    data: String,
+    reason: String
 ) : IllegalStateException("Failed to parse date string: \"${data}\". Reason: \"$reason\"")

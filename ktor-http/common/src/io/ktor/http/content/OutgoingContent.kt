@@ -6,8 +6,8 @@ package io.ktor.http.content
 
 import io.ktor.http.*
 import io.ktor.util.*
-import kotlinx.coroutines.*
 import io.ktor.utils.io.*
+import kotlinx.coroutines.*
 import kotlin.coroutines.*
 
 /**
