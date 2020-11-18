@@ -51,10 +51,12 @@ public fun parseAndSortContentTypeHeader(header: String?): List<HeaderValue> = p
     compareByDescending<HeaderValue> { it.quality }.thenBy {
         val contentType = ContentType.parse(it.value)
         var asterisks = 0
-        if (contentType.contentType == "*")
+        if (contentType.contentType == "*") {
             asterisks += 2
-        if (contentType.contentSubtype == "*")
+        }
+        if (contentType.contentSubtype == "*") {
             asterisks++
+        }
         asterisks
     }.thenByDescending { it.params.size }
 )

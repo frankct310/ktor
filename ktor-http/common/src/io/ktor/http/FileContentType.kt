@@ -26,8 +26,9 @@ public fun ContentType.Companion.defaultForFilePath(path: String): ContentType =
 public fun ContentType.Companion.fromFilePath(path: String): List<ContentType> {
     val slashIndex = path.lastIndexOfAny("/\\".toCharArray())
     val index = path.indexOf('.', startIndex = slashIndex + 1)
-    if (index == -1)
+    if (index == -1) {
         return emptyList()
+    }
     return fromFileExtension(path.substring(index + 1))
 }
 
@@ -66,8 +67,10 @@ private val extensionsByContentType: Map<ContentType, List<String>> by lazy {
 
 internal fun List<ContentType>.selectDefault(): ContentType {
     val contentType = firstOrNull() ?: ContentType.Application.OctetStream
-    return if (contentType.contentType == "text" && contentType.charset() == null)
-        contentType.withCharset(Charsets.UTF_8) else contentType
+    return when {
+        contentType.contentType == "text" && contentType.charset() == null -> contentType.withCharset(Charsets.UTF_8)
+        else -> contentType
+    }
 }
 
 internal fun <A, B> Sequence<Pair<A, B>>.groupByPairs() = groupBy { it.first }

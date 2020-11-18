@@ -190,8 +190,9 @@ private fun CharSequence.decodeImpl(
             }
             c == '%' -> {
                 // if ByteArray was not needed before, create it with an estimate of remaining string be all hex
-                if (bytes == null)
+                if (bytes == null) {
                     bytes = ByteArray((end - index) / 3)
+                }
 
                 // fill ByteArray with all the bytes, so Charset can decode text
                 var count = 0

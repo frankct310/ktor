@@ -134,8 +134,9 @@ internal inline fun String.tryParseTime(success: (Int, Int, Int) -> Unit) {
         accept { it.isDigit() }
     }.toInt()
 
-    if (lexer.accept { it.isNonDigit() })
+    if (lexer.accept { it.isNonDigit() }) {
         lexer.acceptWhile { it.isOctet() }
+    }
 
     success(hour, minute, second)
 }
@@ -172,8 +173,9 @@ internal inline fun String.tryParseDayOfMonth(success: (Int) -> Unit) {
         accept { it.isDigit() }
     }.toInt()
 
-    if (lexer.accept { it.isNonDigit() })
+    if (lexer.accept { it.isNonDigit() }) {
         lexer.acceptWhile { it.isOctet() }
+    }
 
     success(day)
 }
@@ -191,8 +193,9 @@ internal inline fun String.tryParseYear(success: (Int) -> Unit) {
         repeat(2) { accept { it.isDigit() } }
     }.toInt()
 
-    if (lexer.accept { it.isNonDigit() })
+    if (lexer.accept { it.isNonDigit() }) {
         lexer.acceptWhile { it.isOctet() }
+    }
 
     success(year)
 }
@@ -267,13 +270,15 @@ internal fun CookieDateBuilder.handleToken(token: String) {
 internal class CookieDateParser {
 
     private fun <T> checkFieldNotNull(source: String, name: String, field: T?) {
-        if (null == field)
+        if (null == field) {
             throw InvalidCookieDateException(source, "Could not find $name")
+        }
     }
 
     private fun checkRequirement(source: String, requirement: Boolean, msg: () -> String) {
-        if (!requirement)
+        if (!requirement) {
             throw InvalidCookieDateException(source, msg())
+        }
     }
 
     /**

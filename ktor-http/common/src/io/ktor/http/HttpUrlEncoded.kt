@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2019 JetBrains s.r.o and contributors. Use of this source code is governed by the Apache 2.0 license.
+ * Copyright 2014-2020 JetBrains s.r.o and contributors. Use of this source code is governed by the Apache 2.0 license.
  */
 
 package io.ktor.http
@@ -37,9 +37,7 @@ public fun List<Pair<String, String?>>.formUrlEncode(): String = StringBuilder()
  * Encode form parameters from a list of pairs to the specified [out] appendable
  */
 public fun List<Pair<String, String?>>.formUrlEncodeTo(out: Appendable) {
-    joinTo(
-        out, "&"
-    ) {
+    joinTo(out, "&") {
         val key = it.first.encodeURLParameter(spaceToPlus = true)
         if (it.second == null) {
             key

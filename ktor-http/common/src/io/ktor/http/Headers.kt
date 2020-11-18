@@ -46,7 +46,8 @@ public class HeadersBuilder(size: Int = 8) : StringValuesBuilder(true, size) {
 
 @Suppress("KDocMissingDocumentation")
 @Deprecated(
-    "Empty headers is internal", replaceWith = ReplaceWith("Headers.Empty"),
+    "Empty headers is internal",
+    replaceWith = ReplaceWith("Headers.Empty"),
     level = DeprecationLevel.ERROR
 )
 public object EmptyHeaders : Headers {

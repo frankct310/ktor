@@ -107,10 +107,12 @@ public fun parseClientCookiesHeader(cookiesHeader: String, skipEscaped: Boolean 
     clientCookieHeaderPattern.findAll(cookiesHeader)
         .map { (it.groups[2]?.value ?: "") to (it.groups[4]?.value ?: "") }
         .filter { !skipEscaped || !it.first.startsWith("$") }
-        .map {
-            if (it.second.startsWith("\"") && it.second.endsWith("\""))
-                it.copy(second = it.second.removeSurrounding("\""))
-            else it
+        .map { cookie ->
+            if (cookie.second.startsWith("\"") && cookie.second.endsWith("\"")) {
+                cookie.copy(second = cookie.second.removeSurrounding("\""))
+            } else {
+                cookie
+            }
         }
         .toMap()
 

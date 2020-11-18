@@ -71,7 +71,8 @@ public sealed class PartData(public val dispose: () -> Unit, public val headers:
 
     @Suppress("KDocMissingDocumentation", "unused")
     @Deprecated(
-        "Use name property instead", ReplaceWith("name"),
+        "Use name property instead",
+        ReplaceWith("name"),
         level = DeprecationLevel.ERROR
     )
     public val partName: String?
@@ -79,7 +80,8 @@ public sealed class PartData(public val dispose: () -> Unit, public val headers:
 
     @Suppress("KDocMissingDocumentation", "unused")
     @Deprecated(
-        "Use headers property instead", ReplaceWith("headers"),
+        "Use headers property instead",
+        ReplaceWith("headers"),
         level = DeprecationLevel.ERROR
     )
     public val partHeaders: Headers
