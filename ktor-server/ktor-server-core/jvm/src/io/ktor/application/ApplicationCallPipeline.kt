@@ -12,8 +12,13 @@ import io.ktor.util.pipeline.*
  * Pipeline configuration for executing [ApplicationCall] instances
  */
 @Suppress("PublicApiImplicitType")
-public open class ApplicationCallPipeline :
-    Pipeline<Unit, ApplicationCall>(Setup, Monitoring, Features, Call, Fallback) {
+public open class ApplicationCallPipeline : Pipeline<Unit, ApplicationCall>(
+    Setup,
+    Monitoring,
+    Features,
+    Call,
+    Fallback
+) {
     /**
      * Pipeline for receiving content
      */
