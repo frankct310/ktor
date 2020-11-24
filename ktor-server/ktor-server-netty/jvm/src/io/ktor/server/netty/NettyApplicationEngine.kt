@@ -123,7 +123,9 @@ public class NettyApplicationEngine(
                 childHandler(
                     NettyChannelInitializer(
                         pipeline, environment,
-                        callEventGroup, engineDispatcherWithShutdown, dispatcherWithShutdown,
+                        callEventGroup,
+                        engineDispatcherWithShutdown,
+                        environment.parentCoroutineContext + dispatcherWithShutdown,
                         connector,
                         configuration.requestQueueLimit,
                         configuration.runningLimit,
