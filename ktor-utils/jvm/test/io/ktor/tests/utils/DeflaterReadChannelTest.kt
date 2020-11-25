@@ -9,6 +9,7 @@ import io.ktor.util.cio.*
 import kotlinx.coroutines.*
 import io.ktor.utils.io.*
 import io.ktor.utils.io.jvm.javaio.*
+import kotlinx.coroutines.debug.*
 import kotlinx.coroutines.debug.junit4.*
 import org.junit.*
 import java.io.*
@@ -56,11 +57,14 @@ class DeflaterReadChannelTest : CoroutineScope {
     @Test
     fun testSmallPieces() {
         val text = "The quick brown fox jumps over the lazy dog"
-        assertEquals(text, asyncOf(text).toInputStream().reader().readText())
+//        assertEquals(text, asyncOf(text).toInputStream().reader().readText())
 
         for (step in 1..text.length) {
-            testReadChannel(text, asyncOf(text))
+            println("Step: $step")
+//            testReadChannel(text, asyncOf(text))
+            println("Start writing")
             testWriteChannel(text, asyncOf(text))
+            println("Write done")
         }
     }
 
@@ -94,8 +98,8 @@ class DeflaterReadChannelTest : CoroutineScope {
         testWriteChannel(text, asyncOf(text))
     }
 
-    private fun asyncOf(text: String) = asyncOf(ByteBuffer.wrap(text.toByteArray(Charsets.ISO_8859_1)))
-    private fun asyncOf(bb: ByteBuffer) = ByteReadChannel(bb)
+    private fun asyncOf(text: String): ByteReadChannel = asyncOf(ByteBuffer.wrap(text.toByteArray(Charsets.ISO_8859_1)))
+    private fun asyncOf(bb: ByteBuffer): ByteReadChannel = ByteReadChannel(bb)
 
     private fun InputStream.ungzip() = GZIPInputStream(this)
 
@@ -106,10 +110,22 @@ class DeflaterReadChannelTest : CoroutineScope {
     private fun testWriteChannel(expected: String, src: ByteReadChannel) {
         val channel = ByteChannel()
         launch {
+            println("Launched")
             src.copyAndClose((channel as ByteWriteChannel).deflated())
+            println("Copied")
         }
 
-        val result = channel.toInputStream().ungzip().reader().readText()
-        assertEquals(expected, result)
+        runBlocking {
+            val data = channel.readRemaining()
+        }
+//        val toInputStream = channel.toInputStream()
+//        println("Input stream done")
+//        val ungzip = toInputStream.ungzip()
+//        println("Ungzip done")
+//        val reader = ungzip.reader()
+//        println("Reader obtained")
+//        val result = reader.readText()
+//        println("Read text done")
+//        assertEquals(expected, result)
     }
 }
